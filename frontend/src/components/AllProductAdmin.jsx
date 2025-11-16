@@ -58,7 +58,7 @@ const AllProductAdmin = () => {
 
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:8080/ecom/products/all?sort=desc")
+      .get("https://skool-hackathon.onrender.com/ecom/products/all?sort=desc")
       .then((response) => {
         const sortedProducts = response.data.sort(
           (a, b) => b.productId - a.productId
