@@ -7,10 +7,12 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-# Run Stage: Use lightweight Java runtime
-FROM openjdk:17-jdk-slim
+# Run Stage: Use a valid Java 17 runtime image
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
