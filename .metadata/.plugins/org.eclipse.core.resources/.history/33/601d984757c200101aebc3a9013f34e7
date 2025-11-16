@@ -1,0 +1,83 @@
+package Ecom.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import Ecom.Model.ChatResponse;
+import Ecom.Model.Intent;
+import Ecom.Service.ProductService;
+import Ecom.Service.CartService;
+import Ecom.Service.OrderService;
+
+@Service
+public class CommandService {
+
+    @Autowired
+    private ProductService productService;
+    
+    @Autowired
+    private CartService cartService;
+    
+    @Autowired
+    private OrderService orderService;
+
+    public ChatResponse process(Intent intent, String message, Long userId) {
+
+        ChatResponse response = new ChatResponse();
+
+        switch (intent) {
+
+            case SEARCH:
+                String keyword = extractKeyword(message);
+                response.setReply("Showing results for: " + keyword);
+                response.setNavigateTo("/products?search=" + keyword);
+                break;
+
+            case ADD_TO_CART:
+                Long productId1 = productService.findProductId(message);
+                cartService.addToCart(userId, productId1);
+                response.setReply("Product added to your cart!");
+                response.setNavigateTo("/cart");
+                response.setAction("ADD_TO_CART");
+                break;
+
+            case BUY:
+                Long productId2 = productService.findProductId(message);
+                orderService.placeOrder(userId, productId2);
+                response.setReply("Order placed successfully!");
+                response.setNavigateTo("/order-success");
+                response.setAction("ORDER");
+                break;
+
+            case NAVIGATE:
+                String page = extractPage(message);
+                response.setReply("Opening " + page + "...");
+                response.setNavigateTo("/" + page);
+                break;
+
+            case HELP:
+                response.setReply("You can ask me to search products, add to cart, buy, or navigate.");
+                break;
+
+            default:
+                response.setReply("Sorry, I didn't understand that. Try again.");
+        }
+
+        return response;
+    }
+
+    private String extractKeyword(String msg) {
+        // simple extraction
+        return msg.replace("show", "")
+                  .replace("search", "")
+                  .replace("find", "")
+                  .trim();
+    }
+
+    private String extractPage(String msg) {
+        if (msg.contains("cart")) return "cart";
+        if (msg.contains("home")) return "";
+        if (msg.contains("checkout")) return "checkout";
+        return "home";
+    }
+}

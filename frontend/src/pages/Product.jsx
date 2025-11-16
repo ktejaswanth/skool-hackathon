@@ -1,0 +1,198 @@
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import "../comp_css/Product.css";
+import api from "../Router/api";
+
+const Product = () => {
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [priceOrder, setPriceOrder] = useState("All");
+  const [nameSearch, setNameSearch] = useState("");
+  let userid = localStorage.getItem("userid");
+
+  const filterProducts = (category, priceOrder, nameSearch, data) => {
+    let filteredProducts = data;
+
+    if (category && category !== "All") {
+      const target = category.toString().trim().toLowerCase();
+      filteredProducts = filteredProducts.filter((product) =>
+        (product.category || "").toString().trim().toLowerCase() === target
+      );
+    }
+    
+    if (priceOrder === "LowToHigh") {
+      filteredProducts = filteredProducts.sort((a, b) => a.price - b.price);
+    } else if (priceOrder === "HighToLow") {
+      filteredProducts = filteredProducts.sort((a, b) => b.price - a.price);
+    }
+
+    if (nameSearch !== "") {
+      const searchQuery = nameSearch.toLowerCase();
+      filteredProducts = filteredProducts.filter((product) =>
+        product.name.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    setFilteredProducts(filteredProducts);
+  };
+
+  // Fetch products once on mount
+  useEffect(() => {
+    api
+      .get("/ecom/products/all")
+      .then((response) => {
+        setProducts(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching data from the API: ", error);
+      });
+  }, []);
+
+  // Apply filters whenever products or filters change
+  useEffect(() => {
+    filterProducts(selectedCategory, priceOrder, nameSearch, products);
+  }, [selectedCategory, priceOrder, nameSearch, products]);
+
+  // Sync selected category with the URL query param so links like
+  // /products?category=classic%20flavours navigate correctly
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // initialize selectedCategory from URL on mount / when param changes
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) {
+      setSelectedCategory(cat);
+    }
+  }, [searchParams]);
+
+  // when user changes select, update query param so navigation is reflected in URL
+  const onCategoryChange = (value) => {
+    setSelectedCategory(value);
+    if (value && value !== "All") {
+      setSearchParams({ category: value });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const addProductToCart = (productid) => {
+    api
+      .post(`/ecom/cart/add-product?userId=${userid}&productId=${productid}`)
+      .then((response) => {
+        localStorage.setItem("cartid", response.data.cartId);
+        alert("product added to Cart");
+      })
+      .catch((error) => {
+        if (error.response && error.response.data) {
+          alert(error.response.data.message);
+        } else {
+          alert("Error To adding Product . Please try again later.");
+          console.error("Error registering:", error);
+        }
+      });
+  };
+
+  return (
+    <div className="product-page">
+      <div className="filter-section">
+        <h2>Filter</h2>
+        <hr />
+        <label>Category</label>
+        <select
+          value={selectedCategory}
+          onChange={(e) => onCategoryChange(e.target.value)}
+        >
+          <option value="All">All</option>
+          <option value="classic flavours">Classic flavours</option>
+          <option value="premium flavours">Premium flavours</option>
+          <option value="seasonal flavours">Seasonal flavours</option>
+          <option value="cones and bars">Cones and Bars</option>
+          <option value="fruit based flavours">Fruit based flavours</option>
+        </select>
+        <br />
+        <label>Price:</label>
+        <div>
+          <select
+            value={priceOrder}
+            onChange={(e) => {
+              setPriceOrder(e.target.value);
+            }}
+          >
+            <option value="All">All</option>
+            <option value="LowToHigh">Low to High</option>
+            <option value="HighToLow">High To Low</option>
+          </select>
+        </div>
+
+        <br />
+        <div>
+          <h4>By Name</h4>
+          <input
+            type="text"
+            placeholder="Search by name"
+            value={nameSearch}
+            onChange={(e) => setNameSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="product-list">
+        {filteredProducts.length === 0 ? (
+          <h1
+            style={{
+              textAlign: "center",
+              margin: "50px",
+              color: "green",
+              width: "800px",
+            }}
+          >
+            Product Not found ....
+          </h1>
+        ) : (
+          filteredProducts.map((product) => (
+            <div className="product-card" key={product.productId}>
+              <div className="product-image1">
+                <img src={product.imageUrl} alt={product.name} />
+              </div>
+              <div className="product-info">
+                <h2>{product.name}</h2>
+                <p>
+                  <strong>Category :</strong> {product.category}
+                </p>
+                <p>
+                  <strong>Description: </strong>
+                  {product.description.substring(0, 25)}
+                </p>
+                <h2 className="product-price">Price: ₹ {product.price}</h2>
+                <p>
+                  {" "}
+                  <strong>Rating :</strong>
+                  {product.reviews.length === 0
+                    ? "Not Available"
+                    : product.reviews[0].rating}
+                </p>
+
+                <div>
+                  <button onClick={() => addProductToCart(product.productId)}>
+                    Add to Cart
+                  </button>
+                  <button>
+                    <Link
+                      to={`/product/${product.productId}`}
+                      style={{ textDecoration: "none", color: "white" }}
+                    >
+                      View
+                    </Link>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Product;

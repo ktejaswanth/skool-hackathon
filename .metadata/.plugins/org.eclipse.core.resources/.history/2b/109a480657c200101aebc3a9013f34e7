@@ -1,0 +1,39 @@
+package Ecom.Service;
+
+public interface ChatResponse process(Intent intent, String text, Long userId) {
+
+    ChatResponse response = new ChatResponse();
+
+    switch(intent) {
+        case SEARCH:
+            // call productService
+            response.setReply("Here are products related to " + extractKeyword(text));
+            break;
+
+        case ADD_TO_CART:
+            Long pid = findProductId(text);
+            cartService.add(userId, pid);
+            response.setReply("Added to cart");
+            response.setNavigateTo("/cart");
+            response.setAction("ADD_TO_CART");
+            break;
+
+        case BUY:
+            Long productId = findProductId(text);
+            orderService.createOrder(userId, productId);
+            response.setReply("Order placed successfully!");
+            response.setNavigateTo("/order-success");
+            response.setAction("ORDER_PLACED");
+            break;
+
+        case NAVIGATE:
+            response.setNavigateTo("/" + extractPage(text));
+            response.setReply("Opening page...");
+            break;
+
+        default:
+            response.setReply("Sorry, I didn't understand that.");
+    }
+
+    return response;
+}

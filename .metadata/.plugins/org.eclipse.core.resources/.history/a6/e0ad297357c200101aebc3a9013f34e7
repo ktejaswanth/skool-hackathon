@@ -1,0 +1,131 @@
+package Ecom.Service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import Ecom.Model.ChatResponse;
+import Ecom.Model.Intent;
+
+@Service
+public class CommandService {
+
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private OrdersService ordersService;
+
+
+    public ChatResponse process(Intent intent, String message, Long userId) {
+
+        ChatResponse response = new ChatResponse();
+
+        switch (intent) {
+
+            // ---------------------------------------------------------
+            // SEARCH PRODUCTS
+            // ---------------------------------------------------------
+            case SEARCH:
+                String keyword = extractKeyword(message);
+                response.setReply("Showing results for: " + keyword);
+                response.setNavigateTo("/products?search=" + keyword);
+                response.setAction("SEARCH");
+                break;
+
+
+            // ---------------------------------------------------------
+            // ADD TO CART
+            // ---------------------------------------------------------
+            case ADD_TO_CART: {
+
+                Long productId = productService.findProductIdByName(message);
+
+                if (productId == null) {
+                    response.setReply("Sorry, I could not find that product.");
+                    break;
+                }
+
+                cartService.addToCart(userId, productId);
+
+                response.setReply("Item added to your cart!");
+                response.setNavigateTo("/cart");
+                response.setAction("ADD_TO_CART");
+                response.setProductId(productId);
+
+                break;
+            }
+
+
+            // ---------------------------------------------------------
+            // BUY PRODUCT
+            // ---------------------------------------------------------
+            case BUY: {
+
+                Long productId = productService.findProductIdByName(message);
+
+                if (productId == null) {
+                    response.setReply("Couldn't find the product you want to buy.");
+                    break;
+                }
+
+                ordersService.placeOrder(userId, productId);
+
+                response.setReply("Order placed successfully!");
+                response.setNavigateTo("/order-success");
+                response.setAction("BUY");
+                response.setProductId(productId);
+
+                break;
+            }
+
+
+            // ---------------------------------------------------------
+            // NAVIGATE
+            // ---------------------------------------------------------
+            case NAVIGATE:
+                String page = extractPage(message);
+                response.setReply("Navigating to " + page + "...");
+                response.setNavigateTo("/" + page);
+                response.setAction("NAVIGATE");
+                break;
+
+
+            // ---------------------------------------------------------
+            // UNKNOWN / DEFAULT
+            // ---------------------------------------------------------
+            default:
+                response.setReply("Sorry, I didn't understand that. Try commands like search, add to cart, buy, or go to cart.");
+                response.setAction("UNKNOWN");
+        }
+
+        return response;
+    }
+
+
+    // ---------------------------------------------------------
+    // HELPER METHODS
+    // ---------------------------------------------------------
+
+    private String extractKeyword(String text) {
+        return text.replace("show", "")
+                   .replace("search", "")
+                   .replace("find", "")
+                   .trim();
+    }
+
+    private String extractPage(String text) {
+
+        text = text.toLowerCase();
+
+        if (text.contains("cart")) return "cart";
+        if (text.contains("home")) return "home";
+        if (text.contains("checkout")) return "checkout";
+        if (text.contains("orders")) return "orders";
+
+        return "home";
+    }
+
+}

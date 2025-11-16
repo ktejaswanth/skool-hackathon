@@ -1,0 +1,6 @@
+package Ecom.Model;
+
+public class ChatRequest {
+	private String message;
+    private Long userId;
+    }

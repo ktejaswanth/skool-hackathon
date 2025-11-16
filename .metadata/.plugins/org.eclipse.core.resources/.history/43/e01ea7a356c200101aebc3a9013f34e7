@@ -1,0 +1,11 @@
+package Ecom.Model;
+
+public class ChatResponse {
+    private String reply;
+    private String action;
+    private String navigateTo;
+    private Long productId;
+    
+    
+    
+}

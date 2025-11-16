@@ -1,0 +1,20 @@
+package Ecom.Model;
+
+public IntentServ detectIntent(String text) {
+
+    text = text.toLowerCase();
+
+    if (text.contains("show") || text.contains("search"))
+        return Intent.SEARCH;
+
+    if (text.contains("add") && text.contains("cart"))
+        return Intent.ADD_TO_CART;
+
+    if (text.contains("buy") || text.contains("order"))
+        return Intent.BUY;
+
+    if (text.contains("go to") || text.contains("open"))
+        return Intent.NAVIGATE;
+
+    return Intent.UNKNOWN;
+}

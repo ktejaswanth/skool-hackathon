@@ -1,0 +1,22 @@
+package Ecom.Model;
+
+@RestController
+@RequestMapping("/api/chat")
+public class ChatController {
+
+    @Autowired
+    private IntentService intentService;
+
+    @Autowired
+    private CommandService commandService;
+
+    @PostMapping
+    public ChatResponse handleMessage(@RequestBody ChatRequest request) {
+
+        Intent intent = intentService.detectIntent(request.getMessage());
+        
+        ChatResponse response = commandService.process(intent, request.getMessage(), request.getUserId());
+        
+        return response;
+    }
+}
